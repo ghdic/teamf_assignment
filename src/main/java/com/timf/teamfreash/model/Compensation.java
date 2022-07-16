@@ -7,10 +7,9 @@ public class Compensation {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
-//    @OneToOne
-//    private VOC voc;
-    @Column(name = "defendant_id")
-    private Long defendant_id;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voc_id")
+    private VOC voc;
     @Column(name = "amount")
     private Long amount;
 }

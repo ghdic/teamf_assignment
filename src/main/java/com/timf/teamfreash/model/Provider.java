@@ -1,12 +1,13 @@
 package com.timf.teamfreash.model;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Column;
-import javax.persistence.Entity;
+import javax.persistence.*;
 
 @Entity(name = "Provider")
-@AttributeOverride(name="id", column = @Column(name="provider_id"))
-public class Provider extends Clinet{
+public class Provider {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private long id;
     @Column(name = "manager_name")
     private String manager_name;
     @Column(name = "email")

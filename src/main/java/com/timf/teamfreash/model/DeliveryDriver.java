@@ -3,11 +3,15 @@ package com.timf.teamfreash.model;
 import javax.persistence.*;
 
 @Entity(name = "DeliverDriver")
-@AttributeOverride(name="id", column = @Column(name="delivery_driver_id"))
-public class DeliveryDriver extends Clinet {
+public class DeliveryDriver{
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private long id;
     @Column(name = "name")
     private String name;
 
-//    @ManyToOne
-//    ShippingCompany company;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shipping_company_id")
+    ShippingCompany company;
+
 }
