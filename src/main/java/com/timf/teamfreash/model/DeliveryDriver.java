@@ -1,11 +1,13 @@
 package com.timf.teamfreash.model;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.Column;
-import javax.persistence.Entity;
+import javax.persistence.*;
 
-@Entity
-@AttributeOverride(name="id", column = @Column(name="delivery_driver_no"))
+@Entity(name = "DeliverDriver")
+@AttributeOverride(name="id", column = @Column(name="delivery_driver_id"))
 public class DeliveryDriver extends Clinet {
+    @Column(name = "name")
+    private String name;
 
+//    @ManyToOne
+//    ShippingCompany company;
 }

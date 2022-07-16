@@ -1,20 +1,23 @@
-//package com.timf.teamfreash.model;
-//
-//
-//import javax.persistence.*;
-//
-//@Entity
-//public class VOC {
-//    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    long id;
-//    @OneToOne
+package com.timf.teamfreash.model;
+
+
+import javax.persistence.*;
+
+@Entity(name = "VOC")
+public class VOC {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private long id;
+//    @OneToMany
 //    Clinet complainer;
 //    @OneToOne
 //    Clinet defendant;
-//    String reason;
-//    String penalty;
-//    boolean is_complete;
-//    boolean is_protest;
+    @Column(name = "reason")
+    private String reason;
 //    @OneToOne
-//    Compensation compensation;
-//}
+//    private Compensation penalty;
+    private boolean is_complete;
+
+//    @OneToMany
+//    private Complaint protest;
+}
