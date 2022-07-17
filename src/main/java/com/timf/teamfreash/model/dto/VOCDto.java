@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.annotation.Transient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,13 +21,13 @@ public class VOCDto {
     private Long id;
     // response, request 분리하는거도 방법
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private long complainer_id;
+    private long complainerId;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private ClientType complainer_type;
+    private ClientType complainerType;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private long defendant_id;
+    private long defendantId;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private ClientType defendant_type;
+    private ClientType defendantType;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Object complainer;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -34,10 +35,10 @@ public class VOCDto {
 
     private String reason;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private List<CompensationDto> penalty;
-    private boolean is_complete;
+    private List<CompensationDto> penalty = new ArrayList<>();
+    private boolean isCompleted;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private List<ComplaintDto> protest;
+    private List<ComplaintDto> protest = new ArrayList<>();
 
     public static VOCDto from(VOC voc, Object complainer, Object defendant) {
         VOCDto vocDto = new VOCDto();
@@ -45,9 +46,11 @@ public class VOCDto {
         vocDto.setComplainer(complainer);
         vocDto.setDefendant(defendant);
         vocDto.setReason(voc.getReason());
-        vocDto.setPenalty(voc.getPenalty().stream().map(CompensationDto::from).collect(Collectors.toList()));
-        vocDto.setProtest(voc.getProtest().stream().map(ComplaintDto::from).collect(Collectors.toList()));
-        vocDto.set_complete(voc.is_completed());
+        if(voc.getPenalty() != null)
+            vocDto.setPenalty(voc.getPenalty().stream().map(CompensationDto::from).collect(Collectors.toList()));
+        if(voc.getPenalty() != null)
+            vocDto.setProtest(voc.getProtest().stream().map(ComplaintDto::from).collect(Collectors.toList()));
+        vocDto.setCompleted(voc.isCompleted());
         return vocDto;
     }
 

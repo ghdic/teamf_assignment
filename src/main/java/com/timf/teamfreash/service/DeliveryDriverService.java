@@ -23,11 +23,8 @@ public class DeliveryDriverService {
     public DeliveryDriver createDeliveryDriver(DeliveryDriver deliveryDriver, String companyName) {
         ShippingCompany shippingCompany = shippingCompanyService.getShippingCompanyFromCompanyName(companyName);
         deliveryDriver.setCompany(shippingCompany);
-
         shippingCompany.getDrivers().add(deliveryDriver);
-        deliveryDriver = deliveryDriverRepo.save(deliveryDriver);
-
-        return deliveryDriver;
+        return deliveryDriverRepo.save(deliveryDriver);
     }
 
     public DeliveryDriver getDeliveryDriverFromId(long id) {

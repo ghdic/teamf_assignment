@@ -11,7 +11,7 @@ import javax.persistence.*;
 @Getter @Setter
 public class DeliveryDriver {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", unique = true)
+    @Column(name = "id")
     private long id;
     @Column(name = "user_id")
     private String userId;

@@ -13,17 +13,17 @@ public class Complaint {
     @Column(name = "id")
     private Long id;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "voc_id")
-    private VOC voc;
+    @JoinColumn(name = "penalty_id")
+    private Penalty penalty;
     @Column(name = "reason")
     private String reason;
-    @Column(name = "adjudicate")
-    private boolean adjudicate;
+    @Column(name = "check")
+    private boolean check;
 
     public static Complaint from(ComplaintDto complaintDto) {
         Complaint complaint = new Complaint();
         complaint.setReason(complaintDto.getReason());
-        complaint.setAdjudicate(complaintDto.isAdjudicate());
+        complaint.setCheck(complaintDto.isCheck());
         return complaint;
     }
 }

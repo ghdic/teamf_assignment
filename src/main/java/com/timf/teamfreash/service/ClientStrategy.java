@@ -7,6 +7,8 @@ import com.timf.teamfreash.model.type.ClientType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+
 @Service
 public class ClientStrategy {
 
@@ -22,6 +24,9 @@ public class ClientStrategy {
     }
 
     public Object getClient(long id, ClientType type) {
+        if (type == null)
+            return null;
+
         switch (type) {
             case DeliveryDriver:
                 return DeliveryDriverDto.from(deliveryDriverService.getDeliveryDriverFromId(id));

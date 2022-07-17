@@ -26,25 +26,25 @@ public class VOCController {
 
     @PostMapping("")
     public ResponseEntity<VOCDto> remonstrateByVOC(@RequestBody final VOCDto vocDto) {
-        vocDto.set_complete(false);
+        vocDto.setCompleted(false);
         VOC voc = vocService.createVOC(VOC.from(vocDto));
-        return new ResponseEntity<>(VOCDto.from(voc, clientStrategy.getClient(voc.getComplainer_id(),voc.getComplainer_type()),
-                clientStrategy.getClient(voc.getDefendant_id(), voc.getDefendant_type())), HttpStatus.CREATED);
+        return new ResponseEntity<>(VOCDto.from(voc, clientStrategy.getClient(voc.getComplainerId(),voc.getComplainerType()),
+                clientStrategy.getClient(voc.getDefendantId(), voc.getDefendantType())), HttpStatus.CREATED);
     }
 
     @GetMapping("")
     public ResponseEntity<List<VOCDto>> showVOCList() {
         List<VOC> vocs = vocService.getAllVOC();
-        List<VOCDto> vocDtos = vocs.stream().map(voc -> VOCDto.from(voc, clientStrategy.getClient(voc.getComplainer_id(),voc.getComplainer_type()),
-                clientStrategy.getClient(voc.getDefendant_id(), voc.getDefendant_type()))).collect(Collectors.toList());
-        return new ResponseEntity<>(vocDtos, HttpStatus.OK);
+        List<VOCDto> vocDtoList = vocs.stream().map(voc -> VOCDto.from(voc, clientStrategy.getClient(voc.getComplainerId(),voc.getComplainerType()),
+                clientStrategy.getClient(voc.getDefendantId(), voc.getDefendantType()))).collect(Collectors.toList());
+        return new ResponseEntity<>(vocDtoList, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<VOCDto> showVOCFromId(@PathVariable final long id) {
         VOC voc = vocService.getVOCFromId(id);
-        return new ResponseEntity<>(VOCDto.from(voc, clientStrategy.getClient(voc.getComplainer_id(),voc.getComplainer_type()),
-                clientStrategy.getClient(voc.getDefendant_id(), voc.getDefendant_type())), HttpStatus.OK);
+        return new ResponseEntity<>(VOCDto.from(voc, clientStrategy.getClient(voc.getComplainerId(),voc.getComplainerType()),
+                clientStrategy.getClient(voc.getDefendantId(), voc.getDefendantType())), HttpStatus.OK);
     }
 
 }

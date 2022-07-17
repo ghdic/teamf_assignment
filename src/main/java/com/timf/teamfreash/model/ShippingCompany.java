@@ -13,7 +13,7 @@ import java.util.List;
 public class ShippingCompany {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", unique = true)
+    @Column(name = "id")
     private long id;
     @Column(name = "company_register_number", unique = true)
     private String companyRegisterNumber;

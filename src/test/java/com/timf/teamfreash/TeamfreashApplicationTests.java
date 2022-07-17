@@ -1,16 +1,13 @@
 package com.timf.teamfreash;
 
-import com.timf.teamfreash.model.Provider;
-import com.timf.teamfreash.model.VOC;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.timf.teamfreash.model.*;
 import com.timf.teamfreash.model.type.BankType;
-import com.timf.teamfreash.model.DeliveryDriver;
 import com.timf.teamfreash.model.type.ClientType;
+import com.timf.teamfreash.model.type.IssueType;
 import com.timf.teamfreash.model.type.SectorType;
-import com.timf.teamfreash.model.ShippingCompany;
-import com.timf.teamfreash.service.DeliveryDriverService;
-import com.timf.teamfreash.service.ProviderService;
-import com.timf.teamfreash.service.ShippingCompanyService;
-import com.timf.teamfreash.service.VOCService;
+import com.timf.teamfreash.service.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -43,6 +40,8 @@ class TeamfreashApplicationTests {
 
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private ShippingCompanyService shippingCompanyService;
@@ -52,6 +51,8 @@ class TeamfreashApplicationTests {
     private ProviderService providerService;
     @Autowired
     private VOCService vocService;
+    @Autowired
+    private CompensationService compensationService;
 
     private List<ShippingCompany> shippingCompanyList = new ArrayList<>();
     private List<DeliveryDriver> deliveryDriverList = new ArrayList<>();
@@ -92,13 +93,13 @@ class TeamfreashApplicationTests {
             shippingCompanyService.deleteShippingCompanyFromId(company.getId());
         for(Provider provider : providerList)
             providerService.deleteProviderFromId(provider.getId());
-        for(VOC voc: vocList)
+        for(VOC voc : vocList)
             vocService.deleteVOCFromId(voc.getId());
         logger.info("DB Clear");
     }
 
     @Test
-    @DisplayName("배상 시나리오 테스트")
+    @DisplayName("배상 시나리오 테스트:즉시수락")
     @Transactional
     public void compensation_scenario() throws Exception {
         // given(준비)
@@ -119,6 +120,28 @@ class TeamfreashApplicationTests {
 
     }
 
+    @Test
+    @DisplayName("VOC등록")
+    public void VOC등록확인() throws Exception {
+        // given
+        Map<String, String> input = new HashMap<>();
+        input.put("complainer_id", Long.toString(providerList.get(0).getId()));
+        input.put("complainer_type", "Provider");
+        input.put("defendant_id", Long.toString(deliveryDriverList.get(0).getId()));
+        input.put("defendant_type", "DeliveryDriver");
+        input.put("reason", "배송이 늦게 되어서 음식이 전부 상하였습니다");
+        // when
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post("/voc")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(input)));
+        // then
+        response.andExpect(MockMvcResultMatchers.status().isCreated())
+                .andDo(MockMvcResultHandlers.print());
+
+        List<VOC> remainVocList = vocService.getAllVOC();
+        for(VOC voc: remainVocList)
+            vocList.add(voc);
+    }
 
     @Test
     @DisplayName("VOC 목록 API")
@@ -126,16 +149,16 @@ class TeamfreashApplicationTests {
         // given
         VOC voc1 = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
                 deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver,
-                "배송이 늦게 되어서 음식이 전부 상하였습니다", false));
+                "배송이 늦게 되어서 음식이 전부 상하였습니다"));
         VOC voc2 = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
                 deliveryDriverList.get(1).getId(), ClientType.DeliveryDriver,
-                "배송품이 파손이 되었습니다", false));
+                "배송품이 파손이 되었습니다"));
         VOC voc3 = vocService.createVOC(new VOC(providerList.get(1).getId(), ClientType.Provider,
                 deliveryDriverList.get(2).getId(), ClientType.DeliveryDriver,
-                "배송물을 잘못된 장소로 보내었습니다", false));
+                "배송물을 잘못된 장소로 보내었습니다"));
         VOC voc4 = vocService.createVOC(new VOC(deliveryDriverList.get(3).getId(), ClientType.DeliveryDriver,
                 providerList.get(1).getId(), ClientType.Provider,
-                "배송물에 누락이 있었습니다", false));
+                "배송물에 누락이 있었습니다"));
         vocList.add(voc1);
         vocList.add(voc2);
         vocList.add(voc3);
@@ -151,40 +174,49 @@ class TeamfreashApplicationTests {
     }
 
     @Test
-    @DisplayName("배상목록API")
-    public void 배상목록API확인() {
+    @DisplayName("배상정보등록")
+    public void 배상정보등록확인() {
 
     }
 
     @Test
-    @DisplayName("VOC등록")
-    public void VOC등록확인() {
+    @DisplayName("배상목록API")
+    public void 배상목록API확인() throws Exception {
         // given
-        Map<String, String> input = new HashMap<>();
-        input.put("complainer_id", Long.toString(providerList.get(0).getId()));
-        input.put("complainer_type", "Provider");
-        input.put("defendant_id", Long.toString(deliveryDriverList.get(0).getId()));
-        input.put("defendant_type", "DeliveryDriver");
+        VOC voc1 = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
+                deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver,
+                "배송이 늦게 되어서 음식이 전부 상하였습니다"));
+        VOC voc2 = vocService.createVOC(new VOC(deliveryDriverList.get(3).getId(), ClientType.DeliveryDriver,
+                providerList.get(1).getId(), ClientType.Provider,
+                "배송물에 누락이 있었습니다"));
+        vocList.add(voc1);
+        vocList.add(voc2);
+
+        // 제품 가격이 50000이라 가정
+        Compensation compensation1 = compensationService.createCompensation(
+                new Compensation(), voc1.getId()); // 왕복배송비 5000
+        Compensation compensation2 = compensationService.createCompensation(
+                new Compensation(), voc2.getId()); // 제품 가격 50% 배상
         // when
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get("/compensation"));
 
         // then
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+
+    @Test
+    @DisplayName("패널티확인등록")
+    public void 패널티확인등록여부() {
+
     }
 
     @Test
-    @DisplayName("패널티등록")
-    public void 패널티등록확인() {
-
-    }
-
-    @Test
-    @DisplayName("배송기사 패널티 확인 여부 등록")
+    @DisplayName("배송기사패널티확인여부")
     public void 배송기사패널티확인여부등록확인() {
 
     }
 
-    @Test
-    @DisplayName("배상정보 등록")
-    public void 배상정보등록확인() {
 
-    }
 }

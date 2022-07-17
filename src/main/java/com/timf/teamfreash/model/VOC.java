@@ -17,13 +17,13 @@ public class VOC {
     @Column(name = "id")
     private long id;
     @Column(name = "complainer_id")
-    private long complainer_id;
+    private long complainerId;
     @Enumerated(value = EnumType.STRING)
-    private ClientType complainer_type;
+    private ClientType complainerType;
     @Column(name = "defendant_id")
-    private long defendant_id;
+    private long defendantId;
     @Enumerated(value = EnumType.STRING)
-    private ClientType defendant_type;
+    private ClientType defendantType;
     @Column(name = "reason")
     private String reason;
     @OneToMany(
@@ -31,37 +31,33 @@ public class VOC {
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY
     )
-    private List<Compensation> penalty;
-    private boolean is_completed;
-
-    @OneToMany(
+    private List<Compensation> compensationList;
+    @OneToOne(
             mappedBy = "voc",
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY
     )
-    private List<Complaint> protest = new ArrayList<>();
+    private Penalty penalty;
 
     public VOC() {
     }
 
     public static VOC from(VOCDto vocDto) {
         VOC voc = new VOC();
-        voc.setComplainer_id(vocDto.getComplainer_id());
-        voc.setComplainer_type(vocDto.getComplainer_type());
-        voc.setDefendant_id(vocDto.getDefendant_id());
-        voc.setDefendant_type(vocDto.getDefendant_type());
+        voc.setComplainerId(vocDto.getComplainerId());
+        voc.setComplainerType(vocDto.getComplainerType());
+        voc.setDefendantId(vocDto.getDefendantId());
+        voc.setDefendantType(vocDto.getDefendantType());
         voc.setReason(vocDto.getReason());
-        voc.set_completed(vocDto.is_complete());
 
         return voc;
     }
 
-    public VOC(long complainer_id, ClientType complainer_type, long defendant_id, ClientType defendant_type, String reason, boolean is_completed) {
-        this.complainer_id = complainer_id;
-        this.complainer_type = complainer_type;
-        this.defendant_id = defendant_id;
-        this.defendant_type = defendant_type;
+    public VOC(long complainerId, ClientType complainerType, long defendantId, ClientType defendantType, String reason) {
+        this.complainerId = complainerId;
+        this.complainerType = complainerType;
+        this.defendantId = defendantId;
+        this.defendantType = defendantType;
         this.reason = reason;
-        this.is_completed = is_completed;
     }
 }
