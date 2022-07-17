@@ -5,6 +5,25 @@
 
 ## 클래스 다이어그램
 
+## 사전 세팅
+### 한글&이모지 charset 관련 설정
+my.cnf(리눅스), my.ini(윈도우) 
+```
+[mysqld]
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+skip-character-set-client-handshake
+```
+
+database 설정
+```
+create database teamfreash;
+alter database teamfreash default character set = utf8mb4;
+```
+
+### application.properties 파일
+mariadb 아이디, 비밀번호 설정
+
 ## 구현해야할 API
 * VOC 목록 API
 * 배상 목록 API
