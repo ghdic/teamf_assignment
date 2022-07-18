@@ -3,6 +3,7 @@ package com.timf.teamfreash.model.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.timf.teamfreash.model.*;
 import com.timf.teamfreash.model.type.ClientType;
+import com.timf.teamfreash.model.type.IssueType;
 import com.timf.teamfreash.service.ClientStrategy;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
@@ -33,24 +34,20 @@ public class VOCDto {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Object defendant;
 
-    private String reason;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private IssueType reason;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private List<CompensationDto> penalty = new ArrayList<>();
-    private boolean isCompleted;
+    private PenaltyDto penalty;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private List<ComplaintDto> protest = new ArrayList<>();
+    private List<CompensationDto> compensationList = new ArrayList<>();
 
     public static VOCDto from(VOC voc, Object complainer, Object defendant) {
         VOCDto vocDto = new VOCDto();
         vocDto.setId(voc.getId());
         vocDto.setComplainer(complainer);
         vocDto.setDefendant(defendant);
-        vocDto.setReason(voc.getReason());
-        if(voc.getPenalty() != null)
-            vocDto.setPenalty(voc.getPenalty().stream().map(CompensationDto::from).collect(Collectors.toList()));
-        if(voc.getPenalty() != null)
-            vocDto.setProtest(voc.getProtest().stream().map(ComplaintDto::from).collect(Collectors.toList()));
-        vocDto.setCompleted(voc.isCompleted());
+        vocDto.setPenalty(PenaltyDto.from(voc.getPenalty()));
+        vocDto.setCompensationList(voc.getCompensationList().stream().map(CompensationDto::from).collect(Collectors.toList()));
         return vocDto;
     }
 

@@ -26,11 +26,14 @@ public class CompensationService {
     public Compensation createCompensation(Compensation compensation, long vocId) {
         VOC voc = vocService.getVOCFromId(vocId);
         compensation.setVoc(voc);
-        voc.getPenalty().add(compensation);
+        return compensationRepo.save(compensation);
+    }
 
-        // 원래는 VOC와 연결된 배송정보에 대한 테이블에서의 제품 결제 정보를 가져와야함
-        // 하지만 배송정보까지 구현하면 코드양이 너무 많아지기에 price는 50,000이라고 가정함
-        compensation.setAmount(getCompensationAmount(compensation.getReason(), 50000L));
+    @Transactional
+    public Compensation createCompensationFromPenaltyAmount(Compensation compensation, long vocId) {
+        VOC voc = vocService.getVOCFromId(vocId);
+        compensation.setVoc(voc);
+        compensation.setAmount(voc.getPenalty().getAmount());
         return compensationRepo.save(compensation);
     }
 
@@ -54,25 +57,5 @@ public class CompensationService {
         return compensation;
     }
 
-    public Long getCompensationAmount(IssueType issue) {
-        return getCompensationAmount(issue, 0L);
-    }
 
-    public Long getCompensationAmount(IssueType issue, Long price) {
-        switch (issue) {
-            case 늦은배송: // 제품비 20% 배송
-                return -price / 5L;
-            case 배송품파손: // 제품비 50% 배상
-                return -price / 10L;
-            case 배송실수: // 재배송
-                return -3000L;
-            case 배송물누락: // 재배송(왕복)
-                return -5000L;
-            case 기타: // 지정가만큼 배상
-                return -price;
-
-            default:
-                return 0L;
-        }
-    }
 }

@@ -29,6 +29,12 @@ public class CompensationController {
         return new ResponseEntity<>(CompensationDto.from(compensation), HttpStatus.CREATED);
     }
 
+    @PostMapping("/penalty/{voc_id}")
+    public ResponseEntity<CompensationDto> makeAmendByCompensationFromPenalty(@PathVariable long voc_id , @RequestBody final CompensationDto compensationDto) {
+        Compensation compensation = compensationService.createCompensationFromPenaltyAmount(Compensation.from(compensationDto), voc_id);
+        return new ResponseEntity<>(CompensationDto.from(compensation), HttpStatus.CREATED);
+    }
+
     @GetMapping("")
     public ResponseEntity<List<CompensationDto>> showCompensationList() {
         List<Compensation> compensationList = compensationService.getAllCompensations();

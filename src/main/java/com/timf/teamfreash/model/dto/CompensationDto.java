@@ -8,7 +8,6 @@ import lombok.Data;
 public class CompensationDto {
     private Long id;
     private Long voc_id;
-    private IssueType reason;
     private Long amount;
     private boolean complete;
 

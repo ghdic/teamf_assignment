@@ -16,18 +16,14 @@ public class Compensation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "voc_id")
     private VOC voc;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "penalty_id")
-    private Penalty penalty;
     @Column(name = "amount")
     private Long amount;
     @Column(name = "complete")
     private boolean complete;
 
-
-
     public static Compensation from(CompensationDto compensationDto) {
         Compensation compensation = new Compensation();
+        compensation.setAmount(compensationDto.getAmount());
 
         return compensation;
     }

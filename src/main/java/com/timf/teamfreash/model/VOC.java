@@ -24,20 +24,20 @@ public class VOC {
     private long defendantId;
     @Enumerated(value = EnumType.STRING)
     private ClientType defendantType;
-    @Column(name = "reason")
-    private String reason;
-    @OneToMany(
-            mappedBy = "voc",
-            cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY
-    )
-    private List<Compensation> compensationList;
+
     @OneToOne(
             mappedBy = "voc",
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY
     )
     private Penalty penalty;
+    @OneToMany(
+            mappedBy = "voc",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY
+    )
+    private List<Compensation> compensationList = new ArrayList<>();
+
 
     public VOC() {
     }
@@ -48,16 +48,14 @@ public class VOC {
         voc.setComplainerType(vocDto.getComplainerType());
         voc.setDefendantId(vocDto.getDefendantId());
         voc.setDefendantType(vocDto.getDefendantType());
-        voc.setReason(vocDto.getReason());
 
         return voc;
     }
 
-    public VOC(long complainerId, ClientType complainerType, long defendantId, ClientType defendantType, String reason) {
+    public VOC(long complainerId, ClientType complainerType, long defendantId, ClientType defendantType) {
         this.complainerId = complainerId;
         this.complainerType = complainerType;
         this.defendantId = defendantId;
         this.defendantType = defendantType;
-        this.reason = reason;
     }
 }

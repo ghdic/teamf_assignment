@@ -17,13 +17,13 @@ public class Complaint {
     private Penalty penalty;
     @Column(name = "reason")
     private String reason;
-    @Column(name = "check")
-    private boolean check;
+    @Column(name = "checked")
+    private boolean checked;
 
     public static Complaint from(ComplaintDto complaintDto) {
         Complaint complaint = new Complaint();
         complaint.setReason(complaintDto.getReason());
-        complaint.setCheck(complaintDto.isCheck());
+        complaint.setChecked(complaintDto.isChecked());
         return complaint;
     }
 }

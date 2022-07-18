@@ -23,6 +23,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,6 +55,8 @@ class TeamfreashApplicationTests {
     private VOCService vocService;
     @Autowired
     private CompensationService compensationService;
+    @Autowired
+    private PenaltyService penaltyService;
 
     private List<ShippingCompany> shippingCompanyList = new ArrayList<>();
     private List<DeliveryDriver> deliveryDriverList = new ArrayList<>();
@@ -101,15 +105,17 @@ class TeamfreashApplicationTests {
     @Test
     @DisplayName("배상 시나리오 테스트:즉시수락")
     @Transactional
-    public void compensation_scenario() throws Exception {
+    public void compensation_scenario_accept() throws Exception {
         // given(준비)
 
 
         // when(실행)
         // 1. 고객사에서 배상을 청구(기사님 귀책) -> VOC생성
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get("/voc"));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post("/voc"));
 
         // 2. 기사님이 APP에서 확인하시고, 본인의 귀책을 인정하고 사인을 함(이의제기x)
+        ResultActions response2 = mockMvc.perform(MockMvcRequestBuilders.get("/penalty/accept"));
+        // ResultActions response2 = mockMvc.perform(MockMvcRequestBuilders.get("/penalty/protest"));
 
         // 3. 배상 금액만큼 배상 시스템에 포함되고, 그 금액만큼 기사님의 월급 차감
 
@@ -121,15 +127,18 @@ class TeamfreashApplicationTests {
     }
 
     @Test
-    @DisplayName("VOC등록")
-    public void VOC등록확인() throws Exception {
+    @DisplayName("VOC등록 & 패널티 등록")
+    public void VOC등록() throws Exception {
         // given
         Map<String, String> input = new HashMap<>();
-        input.put("complainer_id", Long.toString(providerList.get(0).getId()));
-        input.put("complainer_type", "Provider");
-        input.put("defendant_id", Long.toString(deliveryDriverList.get(0).getId()));
-        input.put("defendant_type", "DeliveryDriver");
-        input.put("reason", "배송이 늦게 되어서 음식이 전부 상하였습니다");
+        input.put("complainerId", Long.toString(providerList.get(0).getId()));
+        input.put("complainerType", "Provider");
+        input.put("defendantId", Long.toString(deliveryDriverList.get(0).getId()));
+        input.put("defendantType", "DeliveryDriver");
+        input.put("reason", "배송지연");
+
+        vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider, deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver), IssueType.배송지연);
+
         // when
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post("/voc")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -145,20 +154,16 @@ class TeamfreashApplicationTests {
 
     @Test
     @DisplayName("VOC 목록 API")
-    public void voc목록API확인() throws Exception {
+    public void voc목록API() throws Exception {
         // given
         VOC voc1 = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
-                deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver,
-                "배송이 늦게 되어서 음식이 전부 상하였습니다"));
+                deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver), IssueType.배송지연);
         VOC voc2 = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
-                deliveryDriverList.get(1).getId(), ClientType.DeliveryDriver,
-                "배송품이 파손이 되었습니다"));
+                deliveryDriverList.get(1).getId(), ClientType.DeliveryDriver), IssueType.배송품파손);
         VOC voc3 = vocService.createVOC(new VOC(providerList.get(1).getId(), ClientType.Provider,
-                deliveryDriverList.get(2).getId(), ClientType.DeliveryDriver,
-                "배송물을 잘못된 장소로 보내었습니다"));
+                deliveryDriverList.get(2).getId(), ClientType.DeliveryDriver), IssueType.배송실수);
         VOC voc4 = vocService.createVOC(new VOC(deliveryDriverList.get(3).getId(), ClientType.DeliveryDriver,
-                providerList.get(1).getId(), ClientType.Provider,
-                "배송물에 누락이 있었습니다"));
+                providerList.get(1).getId(), ClientType.Provider), IssueType.배송물누락);
         vocList.add(voc1);
         vocList.add(voc2);
         vocList.add(voc3);
@@ -169,53 +174,73 @@ class TeamfreashApplicationTests {
 
         // then
         response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.[?(@.complainer.id == '%s')]", providerList.get(0).getId()).exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.[?(@.defendant.id == '%s')]", deliveryDriverList.get(0).getId()).exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].penalty.reason").value(equalTo("배송지연")))
                         .andDo(MockMvcResultHandlers.print());
+    }
 
+    @Test
+    @DisplayName("배송기사패널티확인여부")
+    public void 배송기사패널티확인여부() {
+        VOC voc = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
+                deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver), IssueType.배송지연);
+        vocList.add(voc);
+        penaltyService.setPenaltyChecked(voc.getPenalty().getId(), true);
+
+        Penalty penalty = penaltyService.getPenaltyById(voc.getPenalty().getId());
+
+        Assertions.assertEquals(true, penalty.isChecked());
     }
 
     @Test
     @DisplayName("배상정보등록")
-    public void 배상정보등록확인() {
+    public void 배상정보등록() throws Exception {
+        // given
+        VOC voc = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
+                deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver), IssueType.배송지연);
+        vocList.add(voc);
 
+        Map<String, String> input = new HashMap<>();
+        input.put("amount", Long.toString(-20000L));
+
+        // when
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post(String.format("/compensation/%d", voc.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(input)));
+        // then
+        response.andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.voc_id").value(equalTo(voc.getId()))) // json반환타입이랑 long타입 어캐비교하징?
+                .andExpect(MockMvcResultMatchers.jsonPath("$.amount").value(equalTo(-20000L)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.complete").value(equalTo(false)))
+                .andDo(MockMvcResultHandlers.print());
     }
 
     @Test
     @DisplayName("배상목록API")
-    public void 배상목록API확인() throws Exception {
+    public void 배상목록API() throws Exception {
         // given
         VOC voc1 = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
-                deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver,
-                "배송이 늦게 되어서 음식이 전부 상하였습니다"));
-        VOC voc2 = vocService.createVOC(new VOC(deliveryDriverList.get(3).getId(), ClientType.DeliveryDriver,
-                providerList.get(1).getId(), ClientType.Provider,
-                "배송물에 누락이 있었습니다"));
+                deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver), IssueType.배송물누락);
+        VOC voc2 = vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider,
+                deliveryDriverList.get(1).getId(), ClientType.DeliveryDriver), IssueType.배송품파손);
         vocList.add(voc1);
         vocList.add(voc2);
 
         // 제품 가격이 50000이라 가정
-        Compensation compensation1 = compensationService.createCompensation(
+        Compensation compensation1 = compensationService.createCompensationFromPenaltyAmount(
                 new Compensation(), voc1.getId()); // 왕복배송비 5000
-        Compensation compensation2 = compensationService.createCompensation(
+        Compensation compensation2 = compensationService.createCompensationFromPenaltyAmount(
                 new Compensation(), voc2.getId()); // 제품 가격 50% 배상
         // when
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get("/compensation"));
 
         // then
         response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].voc_id").value(equalTo(voc1.getId())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].amount").value(equalTo(-5000)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].complete").value(equalTo(false)))
                 .andDo(MockMvcResultHandlers.print());
-    }
-
-
-    @Test
-    @DisplayName("패널티확인등록")
-    public void 패널티확인등록여부() {
-
-    }
-
-    @Test
-    @DisplayName("배송기사패널티확인여부")
-    public void 배송기사패널티확인여부등록확인() {
-
     }
 
 

@@ -6,16 +6,16 @@ import lombok.Data;
 @Data
 public class ComplaintDto {
     private Long id;
-    private Long voc_id;
+    private Long penalty_id;
     private String reason;
-    private boolean check;
+    private boolean checked;
 
     public static ComplaintDto from(Complaint complaint) {
         ComplaintDto complaintDto = new ComplaintDto();
         complaintDto.setId(complaint.getId());
-        complaintDto.setVoc_id(complaint.getVoc().getId());
+        complaintDto.setPenalty_id(complaint.getPenalty().getId());
         complaintDto.setReason(complaint.getReason());
-        complaintDto.setCheck(complaint.isCheck());
+        complaintDto.setChecked(complaint.isChecked());
 
         return complaintDto;
     }

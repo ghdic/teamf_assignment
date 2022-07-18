@@ -1,7 +1,9 @@
 package com.timf.teamfreash.service;
 
+import com.timf.teamfreash.model.Penalty;
 import com.timf.teamfreash.model.VOC;
 import com.timf.teamfreash.model.exception.VOCNotFoundException;
+import com.timf.teamfreash.model.type.IssueType;
 import com.timf.teamfreash.repository.VOCRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,14 +14,19 @@ import java.util.List;
 @Service
 public class VOCService {
     private VOCRepo vocRepo;
+    private PenaltyService penaltyService;
 
     @Autowired
-    public VOCService(VOCRepo vocRepo) {
+    public VOCService(VOCRepo vocRepo, PenaltyService penaltyService) {
         this.vocRepo = vocRepo;
+        this.penaltyService = penaltyService;
     }
 
-    public VOC createVOC(VOC voc) {
-        return vocRepo.save(voc);
+    public VOC createVOC(VOC voc, IssueType reason) {
+        VOC saved_voc = vocRepo.save(voc);
+        Penalty penalty = penaltyService.createPenalty(new Penalty(reason), voc);
+        voc.setPenalty(penalty);
+        return saved_voc;
     }
 
     public List<VOC> getAllVOC() {

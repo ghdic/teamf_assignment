@@ -26,8 +26,7 @@ public class VOCController {
 
     @PostMapping("")
     public ResponseEntity<VOCDto> remonstrateByVOC(@RequestBody final VOCDto vocDto) {
-        vocDto.setCompleted(false);
-        VOC voc = vocService.createVOC(VOC.from(vocDto));
+        VOC voc = vocService.createVOC(VOC.from(vocDto), vocDto.getReason());
         return new ResponseEntity<>(VOCDto.from(voc, clientStrategy.getClient(voc.getComplainerId(),voc.getComplainerType()),
                 clientStrategy.getClient(voc.getDefendantId(), voc.getDefendantType())), HttpStatus.CREATED);
     }
