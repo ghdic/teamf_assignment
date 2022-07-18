@@ -13,7 +13,7 @@ public class Provider {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private long id;
-    @Column(name = "user_id")
+    @Column(name = "user_id", unique = true)
     private String userId;
     @Column(name = "password")
     private String password;

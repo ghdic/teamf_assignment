@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class PenaltyService {
     private PenaltyRepo penaltyRepo;
@@ -32,6 +34,14 @@ public class PenaltyService {
     public Penalty getPenaltyById(long id) {
         return penaltyRepo.findById(id).orElseThrow(() ->
                 new PenaltyNotFoundException(id));
+    }
+
+    public List<Penalty> getAllPenalty() {
+        return penaltyRepo.findAll();
+    }
+
+    public List<Penalty> getDefendantPenalty(long defendantId) {
+        return penaltyRepo.findAllByVocDefendantId(defendantId);
     }
 
     public Penalty setPenaltyChecked(long id, boolean checked) {

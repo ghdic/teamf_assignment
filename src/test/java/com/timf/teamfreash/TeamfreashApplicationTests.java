@@ -2,6 +2,7 @@ package com.timf.teamfreash;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import com.timf.teamfreash.model.*;
 import com.timf.teamfreash.model.type.BankType;
 import com.timf.teamfreash.model.type.ClientType;
@@ -16,8 +17,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
@@ -40,23 +44,28 @@ class TeamfreashApplicationTests {
 
     private static final Logger logger = LoggerFactory.getLogger(TeamfreashApplicationTests.class);
 
-    @Autowired
+
     private MockMvc mockMvc;
-    @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
     private ShippingCompanyService shippingCompanyService;
-    @Autowired
     private DeliveryDriverService deliveryDriverService;
-    @Autowired
     private ProviderService providerService;
-    @Autowired
     private VOCService vocService;
-    @Autowired
     private CompensationService compensationService;
-    @Autowired
     private PenaltyService penaltyService;
+
+    @Autowired
+    public TeamfreashApplicationTests(MockMvc mockMvc, ObjectMapper objectMapper, ShippingCompanyService shippingCompanyService, DeliveryDriverService deliveryDriverService, ProviderService providerService, VOCService vocService, CompensationService compensationService, PenaltyService penaltyService) {
+        this.mockMvc = mockMvc;
+        this.objectMapper = objectMapper;
+        this.shippingCompanyService = shippingCompanyService;
+        this.deliveryDriverService = deliveryDriverService;
+        this.providerService = providerService;
+        this.vocService = vocService;
+        this.compensationService = compensationService;
+        this.penaltyService = penaltyService;
+    }
 
     private List<ShippingCompany> shippingCompanyList = new ArrayList<>();
     private List<DeliveryDriver> deliveryDriverList = new ArrayList<>();
@@ -106,24 +115,71 @@ class TeamfreashApplicationTests {
     @DisplayName("배상 시나리오 테스트:즉시수락")
     @Transactional
     public void compensation_scenario_accept() throws Exception {
-        // given(준비)
 
+        // 1. 고객사에서 배상을 청구(기사님 귀책) -> VOC & Penalty 생성
+        // given(준비)
+        logger.info("======= 1. 고객사에서 배상을 청구(기사님 귀책) Start =======");
+        Map<String, String> input = new HashMap<>();
+        input.put("complainerId", Long.toString(providerList.get(0).getId()));
+        input.put("complainerType", "Provider");
+        input.put("defendantId", Long.toString(deliveryDriverList.get(0).getId()));
+        input.put("defendantType", "DeliveryDriver");
+        input.put("reason", "배송지연");
 
         // when(실행)
-        // 1. 고객사에서 배상을 청구(기사님 귀책) -> VOC생성
-        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post("/voc"));
+        ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post("/voc")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(input)));
+        // then(검증)
+        response.andExpect(MockMvcResultMatchers.status().isCreated())
+                .andDo(MockMvcResultHandlers.print());
+
+        logger.info("======= 1. 고객사에서 배상을 청구(기사님 귀책) End =======");
 
         // 2. 기사님이 APP에서 확인하시고, 본인의 귀책을 인정하고 사인을 함(이의제기x)
-        ResultActions response2 = mockMvc.perform(MockMvcRequestBuilders.get("/penalty/accept"));
+        // 만약 이의제기 할 경우 패널티와 일대다로 연결되는 이의제기 테이블에 이의생성 -> 중개인을 통해 합의(따로 구현 x)
+        logger.info("======= 2. 기사님이 APP에서 확인하시고, 본인의 귀책을 인정하고 사인을 함(이의제기x) Start =======");
+        // given
+        long defendantId = deliveryDriverList.get(0).getId(); // 기사님id기준 APP에서 첫번째에 있는 패널티 수락한다 가정
+        ResultActions resultActions = mockMvc.perform(MockMvcRequestBuilders.get(String.format("/penalty/%d", defendantId)));
+        MvcResult result = resultActions.andReturn();
+        int penaltyId = JsonPath.read(result.getResponse().getContentAsString(), "$[0].id");
+        // when
+        ResultActions response2 = mockMvc.perform(MockMvcRequestBuilders.post(String.format("/penalty/accept/%d", penaltyId)));
         // ResultActions response2 = mockMvc.perform(MockMvcRequestBuilders.get("/penalty/protest"));
 
+        // then
+        response2.andExpect(MockMvcResultMatchers.status().isAccepted())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.reason").value(equalTo("배송지연")))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.price").value(equalTo(50000)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.amount").value(equalTo(-10000)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.checked").value(equalTo(true)))
+                .andDo(MockMvcResultHandlers.print());
+        logger.info("======= 2. 기사님이 APP에서 확인하시고, 본인의 귀책을 인정하고 사인을 함(이의제기x) End =======");
+
         // 3. 배상 금액만큼 배상 시스템에 포함되고, 그 금액만큼 기사님의 월급 차감
+        // 월급 관련 테이블이 없기때문에 따로 월급 차감은 관련 로직은 따로 구현 x
+        logger.info("======= 3. 배상 금액만큼 배상 시스템에 포함되고, 그 금액만큼 기사님의 월급 차감 Start =======");
+        // given
+        int vocId = JsonPath.read(result.getResponse().getContentAsString(), "$[0].voc_id");
 
-        // then(검증)
-        response.andExpect(MockMvcResultMatchers.status().isOk());
+        // when
+        Map<String, String> inputCompensation = new HashMap<>();
+        input.put("complainerId", Long.toString(providerList.get(0).getId()));
+        ResultActions response3 = mockMvc.perform(MockMvcRequestBuilders.post(String.format("/compensation/penalty/%d", vocId)) // 패널티에서 정해진 보상금액만큼 적용
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(inputCompensation)));
+        // ResultActions response3 = mockMvc.perform(MockMvcRequestBuilders.post(String.format("/compensation/%d", vocId))); // 이때는 보상금액을 따로 설정가능
+        // then
+        response3.andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.amount").value(equalTo(-10000)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.complete").value(equalTo(false)))
+                .andDo(MockMvcResultHandlers.print());
+        logger.info("======= 3. 배상 금액만큼 배상 시스템에 포함되고, 그 금액만큼 기사님의 월급 차감 End =======");
 
-
-
+        List<VOC> remainVocList = vocService.getAllVOC();
+        for(VOC voc: remainVocList)
+            vocList.add(voc);
     }
 
     @Test
@@ -136,8 +192,6 @@ class TeamfreashApplicationTests {
         input.put("defendantId", Long.toString(deliveryDriverList.get(0).getId()));
         input.put("defendantType", "DeliveryDriver");
         input.put("reason", "배송지연");
-
-        vocService.createVOC(new VOC(providerList.get(0).getId(), ClientType.Provider, deliveryDriverList.get(0).getId(), ClientType.DeliveryDriver), IssueType.배송지연);
 
         // when
         ResultActions response = mockMvc.perform(MockMvcRequestBuilders.post("/voc")
@@ -210,8 +264,8 @@ class TeamfreashApplicationTests {
                 .content(objectMapper.writeValueAsString(input)));
         // then
         response.andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.voc_id").value(equalTo(voc.getId()))) // json반환타입이랑 long타입 어캐비교하징?
-                .andExpect(MockMvcResultMatchers.jsonPath("$.amount").value(equalTo(-20000L)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.voc_id").value(equalTo(Math.toIntExact(voc.getId()))))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.amount").value(equalTo(-20000)))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.complete").value(equalTo(false)))
                 .andDo(MockMvcResultHandlers.print());
     }
@@ -237,7 +291,7 @@ class TeamfreashApplicationTests {
 
         // then
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].voc_id").value(equalTo(voc1.getId())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].voc_id").value(equalTo(Math.toIntExact(voc1.getId()))))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].amount").value(equalTo(-5000)))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].complete").value(equalTo(false)))
                 .andDo(MockMvcResultHandlers.print());

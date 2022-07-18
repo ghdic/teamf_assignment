@@ -4,6 +4,10 @@
 ![테이블 스키마](images/table_schema.png)
 
 ## 클래스 다이어그램
+![클래스 다이어그램](images/class_diagram.png)
+
+## 환경
+Window 11, Intellij, Java8, Spring boot 2.7.1, MariaDB 10.6
 
 ## 사전 세팅
 ### 한글&이모지 charset 관련 설정
@@ -23,6 +27,10 @@ alter database teamfreash default character set = utf8mb4;
 
 ### application.properties 파일
 mariadb 아이디, 비밀번호 설정
+
+## 테스트
+`TeamfreashApplicationTests`에 테스트케이스 작성(참고해주세요~)
+
 
 ## 구현해야할 API
 * VOC 목록 API
@@ -77,3 +85,8 @@ mariadb 아이디, 비밀번호 설정
 ## 기타
 * VOC, 패널티, 배상 정보 등을 위한 운송사 정보(운송사, 기사, 정보 등), 고객사 정보(고객사 및 고객사 담당자 정보, 연락처 등),
 * 귀책 당사자는 고객사/운송사 2개 코드를 해야함
+
+## 개선할꺼
+* 테스트할때 json 반환 숫자랑 long자료형이랑 비교 어캐하는지 모르겠음
+* request, response할때 쓰는 객체를 따라 만드는게 좋을듯
+* VOC에 Client의 id랑 type을 받아서 구분하는데 뭔가 더 깔끔하게 짜는방법이 있을거같다 전략적패턴 비슷하게 해보려했는데 잘안됐다
